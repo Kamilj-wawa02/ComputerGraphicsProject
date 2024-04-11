@@ -297,8 +297,6 @@ if __name__ == "__main__":
             roll = np.degrees(np.arctan2(camera_up[0], camera_up[1]))
             print(f"camera_pos: {camera_pos}, camera_front: {camera_front}, camera_up: {camera_up}, pitch: {pitch}, yaw: {yaw}, roll: {roll}, fov: {fov}")
 
-
-        # draw_points(screen)
         pygame.display.flip()
         clock.tick(60)
 
