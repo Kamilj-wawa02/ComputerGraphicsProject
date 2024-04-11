@@ -1,6 +1,8 @@
 import pygame
 import math
 import numpy as np
+from bsptree import Polygon, BSPNode
+import random
 
 
 pygame.init()
@@ -12,11 +14,12 @@ fov = 90.0
 aspect = width / height
 near = 0.1
 far = 50.0
-camera_pos = np.array([0, 0, 5], dtype=np.float64)
+camera_pos = np.array([0, 1, 5], dtype=np.float64)  # camera_pos = np.array([0, 0, 5], dtype=np.float64)
 camera_up = np.array([0, 1, 0], dtype=np.float64)
 camera_front = np.array([0, 0, -1], dtype=np.float64)
 pitch, yaw, roll = 0, 180, 0
 
+polygons_mode = False
 current_tick = 0
 
 
@@ -142,7 +145,7 @@ def project_point(point):
 #     camera_up = np.dot(camera_up, roll_rotation_matrix)
 #     camera_up = normalize(camera_up)
 
-def draw_polygons(screen, polygons):
+def draw_polygons_edges(screen, polygons):
     for points in polygons:
         projected_points = []
         for point in points:
@@ -153,6 +156,36 @@ def draw_polygons(screen, polygons):
             projected_points.append(projected_point)
         if len(projected_points) > 0:
             pygame.draw.aalines(screen, (180, 180, 180), True, projected_points)
+
+
+def build_bsp_tree(polygons):
+    root = BSPNode([Polygon(p) for p in polygons])
+    root.build_tree()
+    return root
+
+
+def sort_polygons(bsp_tree):
+    sorted_polygons = bsp_tree.traverse(camera_pos, camera_front)
+    # if current_tick % 40 == 0:
+    #     print(f'Sorted list:')
+    #     for i, polygon in enumerate(sorted_polygons):
+    #         print(f'Sorted polygon at {i} is {polygon.vertices}')
+    return sorted_polygons[::-1]
+
+
+def draw_polygons(screen, bsp_tree):
+    sorted_polygons = sort_polygons(bsp_tree)
+    for poly in sorted_polygons:
+        points = []
+        for point in poly.vertices:
+            projected_point = project_point(point)
+            if projected_point is None:
+                points = []
+                break
+            points.append(projected_point)
+        if len(points) > 0:
+            pygame.draw.polygon(screen, (50, 50, 50), points)
+            pygame.draw.aalines(screen, (255, 255, 255), True, points)
 
 
 def rotate_vector_around_axis(vector, axis, angle):
@@ -172,7 +205,11 @@ def rotate_vector_around_axis(vector, axis, angle):
 
 
 if __name__ == "__main__":
+    # polygons = load_polygons("polygons_single.txt")
+    # polygons = load_polygons("polygons_duo.txt")
     polygons = load_polygons("polygons.txt")
+    bsp_tree = build_bsp_tree(polygons)
+    bsp_tree.print_tree()
 
     for i, points in enumerate(polygons):
         print(f'Polygon {i + 1}: {points}')
@@ -182,6 +219,9 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_t:
+                    polygons_mode = not polygons_mode
 
         keys_pressed = pygame.key.get_pressed()
 
@@ -244,7 +284,10 @@ if __name__ == "__main__":
         screen.fill((0, 0, 0))
 
         draw_axes(screen)
-        draw_polygons(screen, polygons)
+        if polygons_mode:
+            draw_polygons(screen, bsp_tree)
+        else:
+            draw_polygons_edges(screen, polygons)
 
         current_tick = current_tick + 1
         if current_tick % 40 == 0:
