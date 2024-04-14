@@ -275,8 +275,8 @@ if __name__ == "__main__":
                 fov = 1
         if keys_pressed[pygame.K_n]:
             fov += 1
-            if fov >= 359:
-                fov = 359
+            if fov >= 179:
+                fov = 179
 
         # print(f'camera_pos: {camera_pos}    camera_front: {camera_front}     camera_up: {camera_up}')
 
